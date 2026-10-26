@@ -6,7 +6,8 @@ import { sketchRect, wobbleLine, rng } from '../art/sketch.js';
 import Player from '../entities/Player.js';
 import Stability from '../systems/Stability.js';
 import Eraser from '../systems/Eraser.js';
-import { createHud, showPanel } from '../ui/ui.js';
+import { createHud, showPanel, showHowTo } from '../ui/ui.js';
+import Run from '../systems/Run.js';
 import { sfx } from '../audio/sfx.js';
 
 export default class GameScene extends Phaser.Scene {
@@ -22,6 +23,9 @@ export default class GameScene extends Phaser.Scene {
     this.panel = null;
     this.shakeAt = 0;
     this.deaths = 0;
+    this.pausedTotal = 0; // ms spent paused (excluded from the level timer)
+    this.pauseStart = 0;
+    this.howto = null;
     this.invulnUntil = 0;
   }
 
@@ -57,10 +61,11 @@ export default class GameScene extends Phaser.Scene {
     this.eraser = new Eraser(this);
     this.registerErasables();
 
-    this.hud = createHud(this, this.level, () => this.restart());
+    this.hud = createHud(this, this.level, { onRestart: () => this.restart(), onPause: () => this.togglePause() });
     this.vignette = this.add.image(0, 0, 'vignette').setOrigin(0).setDepth(50).setAlpha(0);
 
     this.input.keyboard.on('keydown-R', () => this.restart());
+    this.input.keyboard.on('keydown-ESC', () => (this.howto ? this.closeHowTo() : this.togglePause()));
     this.input.keyboard.on('keydown', () => sfx.unlock());
     // testing shortcut: press 1 / 2 / ... to jump straight to that level
     LEVELS.forEach((_, i) => this.input.keyboard.on(`keydown-${['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'][i]}`, () => this.scene.restart({ level: i })));
@@ -178,16 +183,61 @@ export default class GameScene extends Phaser.Scene {
     this.state = 'won';
     this.physics.pause();
     sfx.win();
-    const secs = ((this.time.now - this.t0) / 1000).toFixed(1);
+    const secs = ((this.time.now - this.t0 - this.pausedTotal) / 1000).toFixed(1);
     const left = Math.ceil(this.stability.value);
     const hasNext = this.levelIndex + 1 < LEVELS.length;
+    Run.record(this.levelIndex, Number(secs), left, this.deaths);
     const buttons = [{ label: 'Replay', onClick: () => this.restart() }];
-    if (hasNext) buttons.push({ label: 'Next level', primary: true, onClick: () => this.scene.restart({ level: this.levelIndex + 1 }) });
+    buttons.push(hasNext
+      ? { label: 'Next level', primary: true, onClick: () => this.scene.restart({ level: this.levelIndex + 1 }) }
+      : { label: 'Finish', primary: true, onClick: () => this.scene.start('Final') });
     this.panel = showPanel(this, {
       title: 'Sketch complete!',
       subtitle: `Time ${secs}s  ·  Ink left ${left}%` + (this.deaths ? `\nOops count: ${this.deaths}` : ''),
       buttons,
     });
+  }
+
+  // ---- pause ----------------------------------------------------------------
+
+  togglePause() {
+    if (this.state === 'playing') {
+      this.state = 'paused';
+      this.physics.pause();
+      this.pauseStart = this.time.now;
+      this.openPauseMenu();
+    } else if (this.state === 'paused' && !this.howto) {
+      this.panel?.destroy();
+      this.panel = null;
+      this.state = 'playing';
+      this.physics.resume();
+      this.pausedTotal += this.time.now - this.pauseStart;
+    }
+  }
+
+  openPauseMenu() {
+    this.panel = showPanel(this, {
+      title: 'Paused',
+      layout: 'column',
+      buttons: [
+        { label: 'Resume', primary: true, onClick: () => this.togglePause() },
+        { label: 'Restart', onClick: () => this.restart() },
+        { label: 'How to Play', onClick: () => this.openHowTo() },
+        { label: 'Main menu', onClick: () => this.scene.start('Menu') },
+      ],
+    });
+  }
+
+  openHowTo() {
+    this.panel?.destroy();
+    this.panel = null;
+    this.howto = showHowTo(this, { onClose: () => this.closeHowTo() });
+  }
+
+  closeHowTo() {
+    this.howto?.destroy();
+    this.howto = null;
+    this.openPauseMenu();
   }
 
   // Hazard or fall: back to the start. Erased objects stay erased (restart with R for a clean page).

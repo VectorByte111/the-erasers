@@ -14,10 +14,10 @@ Built with **Phaser 3** (Arcade Physics), **Vite** and plain JavaScript. No back
 |---|---|---|
 | 1–2 | Project setup, player, eraser, ink stability, prototype level | Done |
 | 3 | Box, pressure plate, locked door, spikes, Levels 2 and 3 as data | Done |
-| 4 | Start screen, pause menu, How to Play, level-complete / final screens | Planned |
+| 4 | Start screen, pause menu, How to Play, level-complete / final screens | Done |
 | 5–8 | Art pass, juice, balancing, save data, full playtest, deploy | Planned |
 
-Currently the game boots straight into Level 1 (no title screen yet). Three levels are playable.
+The game boots into the title screen. Three levels are playable, followed by a final completion screen.
 
 ---
 
@@ -44,9 +44,8 @@ npm run preview    # serve the built dist/ locally
 | Jump | `Space`, `W` or `↑` |
 | Erase | Hold **left mouse button** and drag over pencil objects |
 | Restart level | `R` or the Restart button |
+| Pause / resume | `Esc` or the Pause button |
 | Jump to level (testing) | `1`, `2`, `3` |
-
-Pause (`Esc`) arrives with the menus on Day 4.
 
 ---
 
@@ -91,11 +90,14 @@ src/
   config.js               All tunable numbers (physics, eraser, colours, font)
   style.css               Page styling around the canvas
   levels/levels.js        Level data — add levels here
-  scenes/GameScene.js     Builds a level, runs the game loop, win/lose, restart
+  scenes/MenuScene.js     Title screen with the animated eraser sweep
+  scenes/GameScene.js     Builds a level, runs the game loop, pause, win/lose, restart
+  scenes/FinalScene.js    Final completion screen with run stats
   entities/Player.js      Movement, coyote time, jump buffer, variable jump height
   systems/Eraser.js       Cursor, rubbing, progress, denied feedback, removal
   systems/Stability.js    Ink Stability meter and danger levels
-  ui/ui.js                HUD, sketchy buttons, win/lose panels
+  systems/Run.js          In-memory stats for the current playthrough
+  ui/ui.js                HUD, sketchy buttons, pause/win/lose panels, How to Play
   art/sketch.js           Wobbly-line helpers (sketchRect, wobbleCircle, ...)
   art/textures.js         Paper, doodle, door, particle and vignette textures
   audio/sfx.js            Synthesized WebAudio sound effects
@@ -125,7 +127,7 @@ Levels are plain objects appended to the array in `src/levels/levels.js`. The wo
 
 - `cost` is the % of stability spent for a full erase. If omitted it is derived from the object's area.
 - `eraseTime` is seconds of scribbling for a full erase (default 1).
-- Level-complete shows **Next level** automatically when another level exists.
+- Level-complete shows **Next level** automatically when another level exists; after the last level it shows **Finish**, which opens the final screen.
 
 ### Design rules of thumb
 
@@ -157,10 +159,12 @@ Everything that affects feel is in `src/config.js`:
 
 ## Known gaps / roadmap
 
-- Title screen, How to Play, pause menu, and the final completion screen (Day 4).
 - Best time and best remaining ink saved to `localStorage` (Day 7).
 - Art polish, more particles, and bundled handwriting font (Day 5–6).
 - Possible later: respawn for a box that leaves the page, more levels, gamepad or touch support.
 
 ---
 
+## License
+
+Add a license of your choice before publishing.

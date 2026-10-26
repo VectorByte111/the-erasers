@@ -1,6 +1,6 @@
 // All artwork is generated in code — no image files, so nothing can 404.
 import { GAME_W as W, GAME_H as H, COLORS } from '../config.js';
-import { rng, wobbleLine, wobbleCircle } from './sketch.js';
+import { rng, wobbleLine, wobbleCircle, sketchRect } from './sketch.js';
 
 const INK = COLORS.ink;
 
@@ -18,6 +18,7 @@ export function ensureTextures(scene) {
   createDoodle(scene);
   createDoor(scene);
   createDot(scene);
+  createEraser(scene);
   createVignette(scene);
 }
 
@@ -147,4 +148,14 @@ function createVignette(scene) {
   c.fillStyle = gr;
   c.fillRect(0, 0, W, H);
   t.refresh();
+}
+
+function createEraser(scene) {
+  makeTexture(scene, 'eraser-big', 64, 30, (g) => {
+    sketchRect(g, 0, 0, 64, 30, { seed: 61, fill: COLORS.red, hatch: false, width: 3 });
+    g.fillStyle(0xf6efe0, 1);
+    g.fillRect(42, 3, 19, 24); // paper sleeve
+    g.lineStyle(2.4, INK, 1);
+    wobbleLine(g, 42, 3, 42, 27, rng(5), 0.5);
+  });
 }

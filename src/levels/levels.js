@@ -96,10 +96,3 @@ export const LEVELS = [
     ],
   },
 ];
-
-
-
-
-
-
-
